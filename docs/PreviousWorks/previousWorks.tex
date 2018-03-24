@@ -1,0 +1,174 @@
+%\documentclass[openany]{book}
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb} %for fancy L
+\usepackage{calrsfs} %for fancy L
+\usepackage{cancel}
+\usepackage{tabularx}
+\usepackage[hyphens]{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[titletoc,title]{appendix}
+\usepackage{subfig}
+\DeclareMathAlphabet{\pazocal}{OMS}{zplm}{m}{n} %for fancy L
+\usepackage{epsfig, float,array,tabu,longtable,}
+\usepackage{hyperref,wrapfig}
+\usepackage{enumerate}
+\usepackage{graphicx,psfrag}
+\usepackage{cite}
+\usepackage{sectsty}
+\usepackage{epstopdf}
+\usepackage{amsmath,esint, setspace, fancyhdr, amsfonts, bookmark, blindtext}
+\usepackage[normalem]{ulem}
+\usepackage{tikz}
+\usepackage{rotating}
+\usepackage[americanvoltages,fulldiodes,siunitx]{circuitikz}
+\usepackage{stackengine}
+\usetikzlibrary{matrix}
+\usepackage{multirow}
+\usepackage{multicol}
+\usetikzlibrary{shapes,backgrounds,patterns}
+\usetikzlibrary{mindmap,trees,decorations.markings}
+\usetikzlibrary{quotes,angles}
+\usepackage{verbatim}
+\renewcommand{\baselinestretch}{1}
+\setlength{\textheight}{8in}
+\setlength{\textwidth}{6.5in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0.25in}
+\usepackage{graphicx}
+\setlength{\topmargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\parindent}{.3in}
+\usepackage{listings}
+\usepackage{color} %red, green, blue, yellow, cyan, magenta, black, white
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+\doublespacing
+\begin{document}
+
+
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+
+\center % Center everything on the page
+ 
+%---------------------------------------------------------
+%	HEADING SECTIONS
+%---------------------------------------------------------
+
+\textsc{\LARGE Colorado School of Mines}\\[1.5cm] % Name of your university/college
+\textsc{\Large CSCI 444}\\[0.5cm] % Major heading such as course name
+\textsc{\large Advanced Computer Graphics}\\[0.5cm] % Minor heading such as course title
+
+%---------------------------------------------------------
+%	TITLE SECTION
+%---------------------------------------------------------
+
+\HRule \\[0.6cm]
+{ \huge \bfseries Existing Work Survey}\\[0.4cm] % Title of your document
+\HRule \\[1.0cm]
+ 
+%---------------------------------------------------------
+%	AUTHOR SECTION
+%---------------------------------------------------------
+
+\begin{minipage}{0.4\textwidth}
+    \begin{flushleft}
+        \emph{Author:}  
+        \medskip
+        {\textsc{\textbf{Robinson Merillat }}}   % Your name, bold and small caps    
+    \end{flushleft}
+\end{minipage}
+\begin{minipage}{0.45\textwidth}
+    \begin{flushright} \large
+        \emph{Supervisor:}
+        {\textsc{\textbf{Dr. Jeffery Paone }}} % Supervisor's Name
+    \end{flushright}
+\end{minipage}\\[1cm]
+
+%---------------------------------------------------------
+%	DATE SECTION
+%---------------------------------------------------------
+\begin{center}
+{\large \today}
+\end{center}
+ % Date, change the \today to a set date if you want to be precise
+
+%---------------------------------------------------------
+%	LOGO SECTION
+%---------------------------------------------------------
+%\vfill
+\newcommand*{\plogo}{\includegraphics[width=0.25\textwidth]{../project_proposal/imgs/mines.png}}
+
+\plogo\\[1cm] % Include a department/university logo - this will require the graphicx package
+ 
+%---------------------------------------------------------
+
+\vfill % Fill the rest of the page with whitespace
+\end{titlepage}
+
+\newpage
+
+% SUMMARY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Previous Works}
+\subsection{Designer Worlds: Procedural Generation of Infinite Terrain from Real-World Elevation Data}
+
+This research paper delves into sending real world geographical elevation data into a variation of the perlin 
+noise algorithm called value noise. The geographical data used is from the United States Geological Survey of Utah.
+The value noise algorithm differs from the noise algorithm in that it chooses a randow height to interpolate between 
+as opposed to the gradients. Additionally value noise isn't contrained to be zero at grid points. It has a small speedup 
+over perlin noise, however this is only visible at higher dimensions.
+
+1. \href{http://jcgt.org/published/0003/01/04/}{Link}
+
+\subsection{Realtime Procedural Terrain Generation}
+
+This paper provides an overview of erosion techniques used in games for terrain synthesis. It also goes into 
+detail on how basic perlin noise is inferrior to voronoi diragrams. The 2D texture is then perturbed. Afterwards, 
+seperate erosion techniques can be used such as thermal erosion, Hydraulic erosion, or an algorithm that the writers 
+propose that combines the advantages of the two previously mentioned algorithms.
+
+2. \href{https://pdfs.semanticscholar.org/5961/c577478f21707dad53905362e0ec4e6ec644.pdf}{Link}
+
+\subsection{A Survey of Procedural Methods for Terrain Modelling}
+
+This paper surveys multiple different generation technques such as height-mapping, generating rivers, 
+oceans, and lakes, plant modeling and vegetation distrobution, Road networks, and urban environments.
+One such technique for vegetation generation uses relative elevation, slope, and multi fractal noise 
+to define ecosystems and the ground vegetation is generated at run-time. Another techniques ....
+
+3. \href{http://www.cg.its.tudelft.nl/Publications-new/2009/SDGTB09a/SDGTB09a.pdf}{Link}
+
+\subsection{GDC talk on Building worlds with Noise Gerneration in No Man's Sky}
+
+This video clip from the Game Developer's Conference in March of 2017 discusses the techniques used by the 
+developers of No Man's Sky to procedurally generate an entire univers in no more than 300MB of code, and 200GB of 
+pre-developed assets. They create their own generation technique using a new noise method dubbed Uber Noise by 
+the speaker Sean Murray. It combines several noise methods including Analytical derivative and domain warping.
+
+4. \href{https://www.youtube.com/watch?v=SePDzis8HqY}{Link}
+
+\subsection{Procedural Generation of Rock Piles using Aperiodic Tiling}
+
+This paper discusses a tiling method for generating piles of rocks without any computationally demanding simulations. 
+It also attempts to achieve a more realistic outcome than previous tiling methods. It utalizes a modified corner cube 
+algorithm to generate a set of aperiodic (not periodic/ irregular) tiles. This also makes use of Varonoi polygons to 
+enhance the control the shape of the rocks. The method that the writers discuss not only using ellipsoidal anisotropic distance
+to generate the shape of the rocks as voxels, but also take into account rock erosion.
+
+5. \href{https://perso.liris.cnrs.fr/adrien.peytavie/publications/articles/PG2009_ProceduralGenerationOfRockPilesUsingAperiodicTiling.pdf}{Link}
+
+\section{Sources}
+
+\begin{enumerate}
+    \item Ian Parberry, Designer Worlds: Procedural Generation of Infinite Terrain from Real-World Elevation Data, Journal of Computer Graphics Techniques (JCGT), vol. 3, no. 1, 74-85, 2014
+    \item Olsen, J. (2018). Realtime Synthesis of Eroded Fractal Terrain for Use in Computer Games. [ebook] Available at: https://pdfs.semanticscholar.org/5961/c577478f21707dad53905362e0ec4e6ec644.pdf [Accessed 23 Mar. 2018]. 
+    \item Smelik, R., Tutenel, T., Bidarra, R. and Benes, B. (2014). A Survey on Procedural Modelling for Virtual Worlds. Computer Graphics Forum, 33(6), pp.31-50.
+    \item Sean Murray GDC-Talk (2017) | Building Worlds with Noise Generation | No Man's Sky. (2017). [video] Game Developer's Conference
+    \item Peytavie, A., Galin, E., Grosjean, J. and Merillou, S. (2009). Procedural Generation of Rock Piles using Aperiodic Tiling. Computer Graphics Forum, 28(7), pp.1801-1809
+\end{enumerate}
+
+\end{document}
