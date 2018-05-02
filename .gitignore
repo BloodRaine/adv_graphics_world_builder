@@ -227,3 +227,5 @@ __latexIndent_temp.tex
 
 # Project files
 terrainGen
+*.dll
+**/**.o

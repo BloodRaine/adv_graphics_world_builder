@@ -24,8 +24,8 @@
 TARGET = terrainGen
 OBJECTS = src/main.o
 
-LOCAL_INC_PATH = /Users/jpaone/Desktop/include
-LOCAL_LIB_PATH = /Users/jpaone/Desktop/lib
+LOCAL_INC_PATH = usr/local/include
+LOCAL_LIB_PATH = usr/local/lib
 
 BUILDING_IN_LAB = 0
 
@@ -42,7 +42,7 @@ BUILDING_IN_LAB = 0
 #############################
 
 CXX    = g++
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -std=c++11
 
 LAB_INC_PATH = Z:/CSCI441/include
 LAB_LIB_PATH = Z:/CSCI441/lib

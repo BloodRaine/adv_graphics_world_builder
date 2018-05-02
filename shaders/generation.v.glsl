@@ -1,18 +1,31 @@
 /*
  *   Vertex Shader
  *
- *   CSCI 441, Computer Graphics, Colorado School of Mines
+ *   CSCI 444, Adv. Computer Graphics, Colorado School of Mines
  */
 
-#version 410 core
+#version 330 core
 
-// varying inputs
 in vec3 vPos;
+in vec3 normal;
+in vec2 texCoord;
+
+out float texHeight;
+
+uniform sampler2D textureMap;
+
+uniform mat4 PMV;
 
 void main() {
-    /*****************************************/
-    /********* Vertex Calculations  **********/
-    /*****************************************/
+    //*****************************************
+    //********* Vertex Calculations  **********
+    //*****************************************
+    vec4 texel = texture(textureMap, texCoord);
+    int scale = 4;
 
-    gl_Position = vec4(vPos, 1.0);
+    vec3 translation = vec3(vPos.x, vPos.y + scale * texel.y, vPos.z);
+
+    texHeight = texel.y;
+    
+    gl_Position = PMV * vec4(translation, 1.0);
 }
