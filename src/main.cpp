@@ -66,9 +66,10 @@ CSCI441::ShaderProgram *heightmapShaderProgram = NULL;
 CSCI441::ModelLoader* plane = NULL;
 GLuint heightmapTexHandle;
 GLint map_v_pos, map_normal, map_mv_location, map_proj_mtx = -1, map_texCoord = -1;
-GLint u_rand, u_rand2, u_time;
+GLint u_rand, u_rand2, u_time, u_terrType;
 float r, r2 = 0;
 float t;
+int terrType;
 
 CSCI441::ShaderProgram *genTexture = NULL;
 GLuint genVAO;
@@ -78,6 +79,12 @@ int framebufferWidth = 2000, framebufferHeight = 2000;
 GLuint framebufferHandle;
 GLuint fboTexHandle;
 GLuint renderbufferHandle;
+
+struct VertexTextured
+{
+	float x, y, z;
+	float s, t;
+};
 
 //******************************************************************************
 //
@@ -354,8 +361,6 @@ void setupShaders() {
 	map_v_pos = heightmapShaderProgram->getAttributeLocation("vPos");
 	map_normal = heightmapShaderProgram->getAttributeLocation("normal");
 	map_texCoord = heightmapShaderProgram->getAttributeLocation("texCoord");
-	u_rand = heightmapShaderProgram->getUniformLocation("r");
-	u_rand2 = heightmapShaderProgram->getUniformLocation("r2");
 	u_time = heightmapShaderProgram->getUniformLocation("time");
 	t = float(clock());
 
@@ -363,6 +368,9 @@ void setupShaders() {
 	g_pos = genTexture->getAttributeLocation("vPos");
 	g_mvp = genTexture->getUniformLocation("mvp");
 	g_res = genTexture->getUniformLocation("resolution");
+	u_rand = genTexture->getUniformLocation("r");
+	u_rand2 = genTexture->getUniformLocation("r2");
+	u_terrType = genTexture->getUniformLocation("terrainType");
 }
 
 // setupBuffers() //////////////////////////////////////////////////////////////
@@ -371,10 +379,6 @@ void setupShaders() {
 //
 ////////////////////////////////////////////////////////////////////////////////
 void setupBuffers() {
-	struct VertexTextured {
-		float x, y, z;
-		float s, t;
-	};
 
 	//////////////////////////////////////////
 	//
@@ -520,15 +524,16 @@ void setupBuffers() {
 		printf("Framebuffer FAILED TO INITIALIZE COMPLETELY.\n");
 }
 
+
 void setupPlane()
 {
 	plane = new CSCI441::ModelLoader();
-	plane->loadModelFile("models/plane.obj");
+	plane->loadModelFile("models/highPoly.obj");
 	srand(static_cast<unsigned>(time(0)));
 	r = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 5.0));
 	r2 = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 5.0));
-	printf("%f\n", r);
-	printf("%f\n", r2);
+	terrType = int(static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 100.0)));
+	printf("%i\n",terrType);
 }
 
 //******************************************************************************
@@ -571,6 +576,7 @@ void renderScene(glm::mat4 viewMatrix, glm::mat4 projectionMatrix, glm::mat4 ort
 
 	glBindTexture(GL_TEXTURE_2D, fboTexHandle);
 	plane->draw(map_v_pos, map_normal, map_texCoord);
+
 }
 
 void renderTexture( glm::mat4 viewMatrix, glm::mat4 projectionMatrix ) {
@@ -581,6 +587,9 @@ void renderTexture( glm::mat4 viewMatrix, glm::mat4 projectionMatrix ) {
 	genTexture->useProgram();
 	glUniformMatrix4fv(g_mvp, 1, GL_FALSE, &vp[0][0]);
 	glUniform2fv(g_res, 1, &resolution[0]);
+	glUniform1f(u_rand, r);
+	glUniform1f(u_rand2, r2);
+	glUniform1i(u_terrType, terrType);
 	glBindVertexArray(genVAO);
 	glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*)0);
 }

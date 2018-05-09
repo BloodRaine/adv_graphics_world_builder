@@ -21,9 +21,9 @@ void main() {
     //********* Vertex Calculations  **********
     //*****************************************
     vec4 texel = texture(textureMap, texCoord);
-    int scale = 4;
+    int scale = 5;
 
-    vec3 translation = vec3(vPos.x, vPos.y + scale * texel.y, vPos.z);
+    vec3 translation = vec3(vPos.x, vPos.y + scale * (texel.y-1), vPos.z);
 
     texHeight = texel.y;
     

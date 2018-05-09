@@ -16,5 +16,7 @@ void main() {
     //******* Final Color Calculations ********
     //*****************************************
 
-    fragColorOut = vec4(texHeight, texHeight, texHeight, 1.0);
+    vec3 color = mix(vec3(1.,0.,0.), vec3(0.,1.,0.), texHeight);
+
+    fragColorOut = vec4(color*1.5*texHeight, 1.0);
 }

@@ -1,10 +1,20 @@
 #version 330 core
-#define NUM_OCTAVES 16
+#define SWITCH_TIME 	60.0		// seconds
 
 in vec3 vertex;
 out vec4 fragColorOut;
 
+float t = 1.0/60.0;
+
 uniform vec2 resolution;
+uniform float r;
+uniform float r2;
+uniform int terrainType;
+
+float function 			= mod(t,4.0);
+bool  multiply_by_F1	= mod(t,8.0)  >= 4.0;
+bool  inverse			= mod(t,16.0) >= 8.0;
+float distance_type	= mod(t/16.0,4.0);
 
 float random (vec2 _st) {
     return fract(sin(dot(_st.xy,
@@ -12,15 +22,14 @@ float random (vec2 _st) {
         43758.5453123);
 }
 
-float hash(vec3 p)  // replace this by something better
-{
-    p  = 50.0*fract( p*0.3183099 + vec3(0.71,0.113,0.419));
-    return -1.0+2.0*fract( p.x*p.y*p.z*(p.x+p.y+p.z) );
+vec2 hash( vec2 p ){
+	p = vec2( dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));
+	return fract(sin(p)*43758.5453);
 }
 
-float noise (in vec2 _st) {
-    vec2 i = floor(_st);
-    vec2 f = fract(_st);
+float perlinNoise (vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
 
     // Four corners in 2D of a tile
     float a = random(i);
@@ -70,143 +79,228 @@ vec3 voronoi(vec2 st) {
     return color;
 }
 
-float fbm ( vec2 _st ) {
-    float v = 0.0;
-    float a = 0.5;
-    vec2 shift = vec2(100.0);
-    // Rotate to reduce axial bias
-    mat2 rot = mat2(cos(0.5), sin(0.5),
-                    -sin(0.5), cos(0.50));
-    for (int i = 0; i < NUM_OCTAVES; ++i) {
-        v += a * noise(_st);
-        _st = rot * _st * 1.5 + shift;
-        a *= 0.5;
+float billowedNoise(vec2 p)
+{
+    return abs(perlinNoise(p));
+}
+
+float ridgedNoise(vec2 p)
+{
+    return 1.0f-billowedNoise(p);
+}
+
+float fbm (vec2 st, int octaves) {
+    // Initial values
+    float value = 0.0;
+    float amplitude = .5;
+    float frequency = 1.0;
+    float lac = 1.92;
+    float gain = 0.5;
+    vec2 dsum = vec2(0.0);
+    //
+    // Loop of octaves
+    for (int i = 0; i < octaves; i++) {
+        value += amplitude * ridgedNoise(st*frequency);
+        st *= frequency;
+        frequency *= lac; 
+        amplitude *= gain;
     }
-    return v;
+    return value;
 }
 
-float pattern (vec2 p) {
-    vec2 q = vec2( fbm( p + vec2( 0.0, 0.0 ) ), 
-                   fbm( p + vec2( 5.2, 1.3 ) ) );
-    vec2 r = vec2( fbm( 4.0 * q + vec2( 1.7,9.2) ),
-                   fbm( 4.0 * q + vec2(8.3, 2.8) ) );
+float pattern (vec2 p, int octaves) {
+    vec2 q = vec2( fbm( p + vec2( 0.0, 0.0 ) , octaves), 
+                   fbm( p + vec2( 5.2, 1.3 ), octaves ) );
+    vec2 r = vec2( fbm( 4.0 * q + vec2( 1.7,9.2) , octaves),
+                   fbm( 4.0 * q + vec2(8.3, 2.8) , octaves) );
 
-    return fbm(p + 4.0*r);
+    return fbm(p + r, octaves);
 }
 
-// returns 3D value noise and its 3 derivatives
-// vec4 noised( in vec3 x )
-// {
-//     vec3 p = floor(x);
-//     vec3 w = fract(x);
+float erosion(vec2 p, vec2 n, int octaves) {
+    float T = 0.005;
+    float h1 = pattern(p, octaves);
+    float h2 = pattern(n, octaves);
+
+    float diff = h2 - h1;
+
+    if (diff > T) {
+        if (h2 > h1) {
+            h1 += 0.02;
+        } else {
+            h1 -= 0.04;
+        }
+    }
+    return h1;
+}
+
+vec3 permute(vec3 x) {
+    return mod((34.0 * x + 1.0) * x, 289.0);
+  }
+
+vec3 dist(vec3 x, vec3 y,  bool manhattanDistance) {
+  return manhattanDistance ?  abs(x) + abs(y) :  (x * x + y * y);
+}
+
+float voronoise( vec2 x ){
+	vec2 n = floor( x );
+	vec2 f = fract( x );
+	
+	float F1 = 10.0;
+	float F2 = 10.0;
+	
+	for( int j=-1; j<=1; j++ )
+		for( int i=-1; i<=1; i++ ){
+			vec2 g = vec2(i,j);
+			vec2 o = hash( n + g );
+
+			o = 0.5 + 0.41*sin( 0.5 + 6.2831*o );	
+			vec2 r = g - f + o;
+
+		float d = 	distance_type < 1.0 ? dot(r,r)  :				// euclidean^2
+				  	distance_type < 2.0 ? sqrt(dot(r,r)) :			// euclidean
+					distance_type < 3.0 ? abs(r.x) + abs(r.y) :		// manhattan
+					distance_type < 4.0 ? max(abs(r.x), abs(r.y)) :	// chebyshev
+					0.0;
+
+		if( d<F1 ) { 
+			F2 = F1; 
+			F1 = d; 
+		} else if( d<F2 ) {
+			F2 = d;
+		}
+    }
+	
+	float c = function < 1.0 ? F1 : 
+			  function < 2.0 ? F2 : 
+			  function < 3.0 ? F2-F1 :
+			  function < 4.0 ? (F1+F2)/2.0 : 
+			  0.0;
+		
+	if( multiply_by_F1 )	c *= F1;
+	if( inverse )			c = 1.0 - c;
+	
+    return c;
+}
+
+vec3 island(vec2 st, vec2 nxt, int octaves) {
+    vec3 outNoise = vec3(0.0);
+
+    float rad = 0.38;
+
+    float loc = sqrt((st.x-0.5)*(st.x-0.5) + (st.y-0.5)*(st.y-0.5));
+
+    outNoise += 0.6*voronoise(st/(1.0/((r*r2)*(r*r2))));
+
+    if (loc <= rad) {
+        outNoise.y += 0.7-1.2*loc;
+        outNoise.y -= 0.1;
+        float f1 = fbm(st*r, octaves);
+        float f2 = fbm(st*r2, octaves);
+
+        outNoise += 0.4*fbm(vec2(r*f1,f2), octaves);
+        outNoise -= erosion(st, nxt, octaves);
+        if (outNoise.y < 0.2) {
+            outNoise.y = 0.2;
+        }
+    } else {
+        if (outNoise.y < 0.5) {
+            outNoise.y = 0.2;
+        }
+    }
+
+    return outNoise; 
+}
+
+vec3 rugged(vec2 st, vec2 nxt, int octaves) {
+    float c1 = 0.9 - voronoise(st/(1/(2*r*r2)));
+    vec3 outNoise = vec3(0.6*r*c1);
     
-//     vec3 u = w*w*w*(w*(w*6.0-15.0)+10.0);
-//     vec3 du = 30.0*w*w*(w*(w-2.0)+1.0);
+    outNoise += 0.7*voronoi(st);
+    outNoise -= 1.4*erosion(st*r, nxt*0.5*r2, octaves);
+    if (outNoise.y <= 0.1) {
+        outNoise.y = 0.0;
+    } else {
+        outNoise.y -= 0.05;
+    }
+    outNoise += 0.7*voronoise(st/(1/r));
+    outNoise += 0.2*ridgedNoise(st);
+    outNoise.y += 0.1;
+    return outNoise;
+}
 
-//     float a = hash( p+vec3(0,0,0) );
-//     float b = hash( p+vec3(1,0,0) );
-//     float c = hash( p+vec3(0,1,0) );
-//     float d = hash( p+vec3(1,1,0) );
-//     float e = hash( p+vec3(0,0,1) );
-//     float f = hash( p+vec3(1,0,1) );
-//     float g = hash( p+vec3(0,1,1) );
-//     float h = hash( p+vec3(1,1,1) );
+vec3 mountain(vec2 st, vec2 nxt, int octaves) {
+    vec3 outNoise = vec3(0.0);
 
-//     float k0 =   a;
-//     float k1 =   b - a;
-//     float k2 =   c - a;
-//     float k3 =   e - a;
-//     float k4 =   a - b - c + d;
-//     float k5 =   a - c - e + g;
-//     float k6 =   a - b - e + f;
-//     float k7 = - a + b + c - d + e - f - g + h;
+    vec2 nv = gl_FragCoord.xy/((1/(r*r2))*resolution.xy);
+    nv.x *= resolution.x/resolution.y;
 
-//     return vec4( -1.0+2.0*(k0 + k1*u.x + k2*u.y + k3*u.z + k4*u.x*u.y + k5*u.y*u.z + k6*u.z*u.x + k7*u.x*u.y*u.z), 
-//                       2.0* du * vec3( k1 + k4*u.y + k6*u.z + k7*u.y*u.z,
-//                                       k2 + k5*u.z + k4*u.x + k7*u.z*u.x,
-//                                       k3 + k6*u.x + k5*u.y + k7*u.x*u.y ) );
-// }
+    float c1 = voronoise(nv);
 
- // returns 3D fbm and its 3 derivatives
-// vec4 fbm( in vec3 x, int octaves ) 
-// {
-//     float f = 1.98;  // could be 2.0
-//     float s = 0.49;  // could be 0.5
-//     float a = 0.0;
-//     float b = 0.5;
-//     vec3  d = vec3(0.0);
-//     mat3  m = mat3(1.0,0.0,0.0,
-//                    0.0,1.0,0.0,
-//                    0.0,0.0,1.0);
-//     for( int i=0; i < octaves; i++ )
-//     {
-//         vec4 n = noised(x);
-//         a += b*n.x;          // accumulate values		
-//         d += b*m*n.yzw;      // accumulate derivatives
-//         b *= s;
-//         x = f*m3*x;
-//         m = f*m3i*m;
-//     }
-//     return vec4( a, d );
-// }
+    outNoise += r*c1;
+    outNoise += voronoi(st);
+
+    outNoise -= erosion(st, nxt, octaves);
+
+    if (outNoise.y < 0.05) {
+        outNoise.y = 0.1*billowedNoise(nv);
+    } else if (outNoise.y < 0.075) {
+        outNoise.y += 0.05*billowedNoise(nv);
+    }
+
+    return outNoise;
+}
 
 
-// float uberNoise (vec3 lPosition, int octaves, float perterb, float sharpness, float ampFeatures, 
-//                  float altErosion, float ridgeErosion, flost slopeErosion, float lacunarity, float gain) {
+vec3 canyon(vec2 st, vec2 nxt, int octaves) {
 
-//     // amplify features
-//     float lfCurrentGain  = gain + ampFeatures;
+    vec2 nv = gl_FragCoord.xy/(1/(2*r*r2)*resolution.xy);
+    nv.x *= resolution.x/resolution.y;
 
-//     // Sharpness
-//     float lfRidgeNoise = (1.0f - abs(featureNoise));
-//     float billowNoise = featureNoise * featureNoise;
+    vec3 outNoise = vec3(0.0);
 
-//     featureNoise = lerp(featureNoise, billowNoise, max(0.0,sharpness));
-//     featureNoise = lerp(featureNoise, lfRidgeNoise, abs(mine(0.0,sharpness)));
+    float f1 = fbm(st*r, octaves);
+    float f2 = fbm(st*r2, octaves);
 
-//     // slope erosion
-//     slopeErosionDerivativeSum = lDerivative + slopeErosion;
+    outNoise += fbm(vec2(r*f1,f2), octaves);
 
-//     lfsum += lfAmplitude, * featureNoise* (1.0f / (1.0 + dot(slopeErosionDerivativeSum, slopeErosionDerivativeSum)));
+    float f = 0.3*voronoise(nv);
 
-//     // Amplitude Damping
-//     lfsum += dampedAmplitude * featureNoise * (1.0 / (1.0 + dot(slopeErosionDerivativeSum, slopeErosionDerivativeSum)));
-//     lfAmplitude *= lerp(currentGain, currentGain * smoothstep(0.0f, 1.0f, lfsum), altErosion);
-//     lfDampedAmplitude = Amplitude * (1.0 - (ridgeErosion / (1.0 + dot(ridgeErosionDerivativeSum, ridgeErosionDerivativeSum))));
+    outNoise -= vec3(f);
 
-//     // domain perturb
-//     lOctavePosition = (lPosition * lFrequency) + perterbDerivativeSum;
-//     perterbDerivativeSum += lDerivative * perturbFeatures;
+    if (outNoise.y < 0.15) {
+        outNoise.y = 0.6;
+    } else if (outNoise.y < 0.225) {
+        outNoise.y = 0.5;
+    } else if (outNoise.y < 0.3) {
+        outNoise.y = 0.4;
+    }
+    outNoise -= 0.2*erosion(st, nxt, octaves);
 
-// }
-
-
-
+    return outNoise;
+}
 
 
 void main(void) {
-    int octaves = 32;
-    float persistence = 0.7;
+    int octaves = 3;
 
     vec2 st = gl_FragCoord.xy/resolution.xy;
     st.x *= resolution.x/resolution.y;
 
-    vec3 color = voronoi(st);
+    vec2 nxt = vec2(gl_FragCoord.x+0.01, gl_FragCoord.y);
+    nxt.s *= resolution.x/resolution.y;
 
-    // vec2 q = vec2(0.);
-    // q.x = fbm( st + 0.00*2, octaves);
-    // q.y = fbm( st + vec2(1.0), octaves);
+    vec3 outNoise = vec3(0.0);
 
-    // vec2 r = vec2(0.0);
-    // r.x = fbm( st + 1.3*q + vec2(1.7,9.2)+ 0.15*1.5 , octaves);
-    // r.y = fbm( st + 1.5*q + vec2(8.3,2.8)+ 0.126*1.5, octaves);
-
-    // float f = fbm(st+r, octaves);
-
+    if (terrainType < 25) {
+        outNoise += island(st, nxt, octaves);
+    } else if (terrainType < 50) {
+        outNoise += mountain(st, nxt, octaves);
+    } else if (terrainType < 75) {
+        outNoise += canyon(st, nxt, octaves);
+    } else {
+        outNoise += rugged(st, nxt, octaves);
+    }
     
-
-    float o = pattern(st);
-    vec3 fragColor = 1.5* color * o;
-    
-    fragColorOut = vec4(fragColor,1);
+    fragColorOut = vec4(outNoise,1);
 }
